@@ -24,7 +24,7 @@ describe('Profile setup flow', () => {
 
   it('navigates to setup page when clicking new profile', () => {
     renderWithRoutes('/');
-    const newBtn = screen.getByText(/Neues Profil/i);
+  const newBtn = screen.getByRole('button', { name: /\+ Neues Profil/i });
     fireEvent.click(newBtn);
   expect(screen.getByText(/Neues Profil anlegen/i)).not.toBeNull();
   });

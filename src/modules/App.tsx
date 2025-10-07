@@ -4,6 +4,7 @@ import { ProfileSelection } from './profile/ProfileSelection';
 import { TopBar } from './layout/TopBar';
 import { Routes, Route } from 'react-router-dom';
 import { ProfileSetupPage } from './profile/ProfileSetupPage';
+import { ProfileEditPage } from './profile/ProfileEditPage';
 import { useThemeStore } from '../store/themeStore';
 
 export const App: React.FC = () => {
@@ -16,6 +17,7 @@ export const App: React.FC = () => {
       <Routes>
         <Route path="/" element={<ProfileSelection />} />
         <Route path="/profiles/new" element={<ProfileSetupPage />} />
+        <Route path="/profiles/:id/edit" element={<ProfileEditPage />} />
       </Routes>
     </div>
   );

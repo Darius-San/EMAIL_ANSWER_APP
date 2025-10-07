@@ -17,6 +17,7 @@ interface ProfileState {
   activeId: string | null;
   addProfile: (data: Partial<Pick<Profile,'name'|'userName'|'email'|'provider'>>) => Profile;
   removeProfile: (id: string) => void;
+  deleteProfile?: (id: string) => void; // alias for removeProfile for semantic clarity in UI
   setActive: (id: string) => void;
   renameProfile: (id: string, name: string) => void;
   updateProfile: (id: string, data: Partial<Omit<Profile,'id'|'createdAt'>>) => void;
@@ -42,6 +43,11 @@ export const useProfileStore = create<ProfileState>()(persist((set, get) => ({
     return p;
   },
   removeProfile: (id) => set(state => ({
+    profiles: state.profiles.filter(p => p.id !== id),
+    activeId: state.activeId === id ? (state.profiles.filter(p => p.id !== id)[0]?.id || null) : state.activeId
+  })),
+  // Provide alias
+  deleteProfile: (id) => set(state => ({
     profiles: state.profiles.filter(p => p.id !== id),
     activeId: state.activeId === id ? (state.profiles.filter(p => p.id !== id)[0]?.id || null) : state.activeId
   })),
