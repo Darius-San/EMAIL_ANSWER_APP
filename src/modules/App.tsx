@@ -1,6 +1,7 @@
 import React from 'react';
 import { useEffect } from 'react';
 import { ProfileSelection } from './profile/ProfileSelection';
+import { TopBar } from './layout/TopBar';
 import { useThemeStore } from '../store/themeStore';
 
 export const App: React.FC = () => {
@@ -9,6 +10,7 @@ export const App: React.FC = () => {
   useEffect(() => { setTheme(theme); }, []); // ensure attribute on first mount
   return (
     <div className="p-6 font-sans">
+      <TopBar />
       <ProfileSelection />
     </div>
   );
