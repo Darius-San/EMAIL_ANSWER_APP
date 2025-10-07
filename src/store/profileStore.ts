@@ -10,12 +10,14 @@ export interface Profile {
   email: string;
   provider: ProfileProvider;
   createdAt: string;
+  imapHost?: string;
+  imapUser?: string;
 }
 
 interface ProfileState {
   profiles: Profile[];
   activeId: string | null;
-  addProfile: (data: Partial<Pick<Profile,'name'|'userName'|'email'|'provider'>>) => Profile;
+  addProfile: (data: Partial<Pick<Profile,'name'|'userName'|'email'|'provider'|'imapHost'|'imapUser'>>) => Profile;
   removeProfile: (id: string) => void;
   deleteProfile?: (id: string) => void; // alias for removeProfile for semantic clarity in UI
   setActive: (id: string) => void;
@@ -37,7 +39,9 @@ export const useProfileStore = create<ProfileState>()(persist((set, get) => ({
       userName: data.userName || 'Unbenannt',
       email: data.email || '',
       provider: data.provider || 'imap',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      imapHost: data.imapHost,
+      imapUser: data.imapUser
     };
     set(state => ({ profiles: [...state.profiles, p], activeId: p.id }));
     return p;
@@ -63,6 +67,14 @@ export const useProfileStore = create<ProfileState>()(persist((set, get) => ({
         userName: 'Unbenannt',
         email: '',
         provider: 'imap'
+      }));
+    }
+    // ensure new optional imap override fields exist (no destructive change)
+    if (persisted.profiles) {
+      persisted.profiles = persisted.profiles.map((p: any) => ({
+        ...p,
+        imapHost: p.imapHost,
+        imapUser: p.imapUser
       }));
     }
     return persisted;

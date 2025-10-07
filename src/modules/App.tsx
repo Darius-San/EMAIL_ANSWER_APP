@@ -1,6 +1,7 @@
 import React from 'react';
 import { useEffect } from 'react';
 import { ProfileSelection } from './profile/ProfileSelection';
+import { EmailList } from './email/EmailList';
 import { TopBar } from './layout/TopBar';
 import { Routes, Route } from 'react-router-dom';
 import { ProfileSetupPage } from './profile/ProfileSetupPage';
@@ -15,7 +16,7 @@ export const App: React.FC = () => {
     <div className="p-6 font-sans">
       <TopBar />
       <Routes>
-        <Route path="/" element={<ProfileSelection />} />
+  <Route path="/" element={<><ProfileSelection /><EmailList /></>} />
         <Route path="/profiles/new" element={<ProfileSetupPage />} />
         <Route path="/profiles/:id/edit" element={<ProfileEditPage />} />
       </Routes>
