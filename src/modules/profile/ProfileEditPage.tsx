@@ -9,19 +9,21 @@ export const ProfileEditPage: React.FC = () => {
   const updateProfile = useProfileStore(s => s.updateProfile);
   const removeProfile = useProfileStore(s => s.removeProfile);
   const setActive = useProfileStore(s => s.setActive);
-  const [name, setName] = useState('');
-  const [userName, setUserName] = useState('');
-  const [email, setEmail] = useState('');
+  // Use undefined initial values so we can distinguish "not yet loaded" vs empty string
+  const [name, setName] = useState<string>('');
+  const [userName, setUserName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
   const [provider, setProvider] = useState<ProfileProvider>('imap');
   const [errors, setErrors] = useState<string[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (!profile) return; // redirect handled below
-    setName(profile.name);
-    setUserName(profile.userName);
-    setEmail(profile.email);
-    setProvider(profile.provider);
+    // Defensive: normalize potential legacy undefined values
+    setName(profile.name ?? '');
+    setUserName(profile.userName ?? '');
+    setEmail(profile.email ?? '');
+    setProvider(profile.provider ?? 'imap');
   }, [profile]);
 
   useEffect(() => {
@@ -30,12 +32,19 @@ export const ProfileEditPage: React.FC = () => {
     }
   }, [profile, navigate]);
 
+  function safeTrim(v: unknown): string {
+    return typeof v === 'string' ? v.trim() : '';
+  }
+
   function validate() {
     const errs: string[] = [];
-    if (!name.trim()) errs.push('Profilname fehlt');
-    if (!userName.trim()) errs.push('Benutzername fehlt');
-    if (!email.trim()) errs.push('E-Mail fehlt');
-    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) errs.push('E-Mail Format ungültig');
+    const n = safeTrim(name);
+    const u = safeTrim(userName);
+    const e = safeTrim(email);
+    if (!n) errs.push('Profilname fehlt');
+    if (!u) errs.push('Benutzername fehlt');
+    if (!e) errs.push('E-Mail fehlt');
+    if (e && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) errs.push('E-Mail Format ungültig');
     setErrors(errs);
     return errs.length === 0;
   }

@@ -1,7 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { TopBar } from '../layout/TopBar';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ProfileSelection } from './ProfileSelection';
 import { ProfileSetupPage } from './ProfileSetupPage';
 import { ProfileEditPage } from './ProfileEditPage';
@@ -11,9 +10,9 @@ function renderWith(initial: string) {
   return render(
     <MemoryRouter initialEntries={[initial]}>
       <Routes>
-        <Route path="/" element={<><TopBar /><ProfileSelection /></>} />
-        <Route path="/profiles/new" element={<><TopBar /><ProfileSetupPage /></>} />
-        <Route path="/profiles/:id/edit" element={<><TopBar /><ProfileEditPage /></>} />
+        <Route path="/" element={<ProfileSelection />} />
+        <Route path="/profiles/new" element={<ProfileSetupPage />} />
+        <Route path="/profiles/:id/edit" element={<ProfileEditPage />} />
       </Routes>
     </MemoryRouter>
   );
@@ -25,7 +24,10 @@ describe('Profile CRUD', () => {
   });
 
   it('creates then lists profile card', () => {
-    renderWith('/profiles/new');
+  // navigate from root via button now
+  renderWith('/');
+  const newButtons = screen.getAllByText(/\+ Neues Profil/i);
+  fireEvent.click(newButtons[0]);
     fireEvent.change(screen.getByLabelText(/Profil Name/i), { target: { value: 'Support' }});
     fireEvent.change(screen.getByLabelText(/Benutzername/i), { target: { value: 'Agent' }});
     fireEvent.change(screen.getByLabelText(/E-Mail Adresse/i), { target: { value: 'agent@example.com' }});
@@ -62,5 +64,28 @@ describe('Profile CRUD', () => {
     fireEvent.change(nameInput, { target: { value: 'Changed' }});
     fireEvent.click(screen.getByText(/Abbrechen/i));
   expect(screen.getAllByText('Original').length).toBeGreaterThan(0);
+  });
+});
+
+describe('Profile edit legacy safety', () => {
+  it('does not crash editing legacy profile with undefined fields', () => {
+    // simulate legacy profile in store
+    useProfileStore.setState({ profiles: [{ id: 'L1', name: undefined as any, userName: undefined as any, email: undefined as any, provider: undefined as any, createdAt: new Date().toISOString() }], activeId: 'L1' });
+
+    render(
+      <MemoryRouter initialEntries={['/profiles/L1/edit']}>
+        <Routes>
+          <Route path="/profiles/:id/edit" element={<ProfileEditPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Try to save directly
+    fireEvent.click(screen.getByText(/Speichern/i));
+
+    // Should show validation errors instead of crashing
+    expect(screen.getByText(/Profilname fehlt/i)).not.toBeNull();
+    expect(screen.getByText(/Benutzername fehlt/i)).not.toBeNull();
+    expect(screen.getByText(/E-Mail fehlt/i)).not.toBeNull();
   });
 });

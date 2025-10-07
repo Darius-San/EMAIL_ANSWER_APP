@@ -3,16 +3,15 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ProfileSetupPage } from './ProfileSetupPage';
 import { useProfileStore } from '../../store/profileStore';
-import { TopBar } from '../layout/TopBar';
 import { ProfileSelection } from './ProfileSelection';
 
 function renderWithRoutes(initial: string) {
   return render(
     <MemoryRouter initialEntries={[initial]}>
-      <Routes>
-        <Route path="/" element={<><TopBar /><ProfileSelection /></>} />
-        <Route path="/profiles/new" element={<><TopBar /><ProfileSetupPage /></>} />
-      </Routes>
+    <Routes>
+      <Route path="/" element={<ProfileSelection />} />
+      <Route path="/profiles/new" element={<ProfileSetupPage />} />
+    </Routes>
     </MemoryRouter>
   );
 }

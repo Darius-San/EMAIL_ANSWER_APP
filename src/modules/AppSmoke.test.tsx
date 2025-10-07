@@ -4,8 +4,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { App } from './App';
 
 describe('App Smoke', () => {
-  it('renders title', () => {
+  it('renders profile heading', () => {
     render(<MemoryRouter><App /></MemoryRouter>);
-    expect(screen.getByText(/Email Responder/i)).not.toBeNull();
+    expect(screen.getByText(/Profile/i)).not.toBeNull();
   });
 });

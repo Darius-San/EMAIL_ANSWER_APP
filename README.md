@@ -72,6 +72,14 @@ Alle Tests laufen headless (Vitest + React Testing Library). Ergänzte Smoke- un
 | Keine E-Mails | IMAP Credentials fehlen oder leerer Posteingang | .env setzen oder Mock-Daten implementieren |
 | BackendStatusBanner dauerhaft “Backend nicht erreichbar” | Backend nicht gestartet oder falsche API Base | Server starten oder `VITE_API_BASE` anpassen |
 
+### Whitescreen Debug Quicklist
+1. DevTools öffnen (F12) ⇒ Console Errors? GlobalErrorOverlay sollte erscheinen, falls JS-Fehler.
+2. Network Tab ⇒ Lädt `/src/main.tsx` und CSS? Falls nicht: falscher Pfad / dev server gestoppt.
+3. Element `#root` vorhanden? Wenn nicht: Prüfe `index.html`.
+4. BackendStatusBanner sichtbar? Wenn nicht und keine UI: Möglicher fataler Script Error ⇒ Overlay oder Console.
+5. Port-Konflikt Logs im Terminal (Server hat neueren Port genommen) ⇒ `VITE_API_BASE` anpassen.
+6. Test lokal ausführen: `npm test --run AppSmoke` zur Sofort-Prüfung Render-Basis.
+
 ## Sicherheit
 Keine Passwörter committen. `.env` lokal halten. Später: Secrets über Secret Manager / Vault integrieren.
 

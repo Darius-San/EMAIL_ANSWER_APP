@@ -21,7 +21,10 @@ export const ProfileSelection: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <h1 className="text-3xl font-bold mb-4">Profile</h1>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <h1 className="text-3xl font-bold">Profile</h1>
+        <button onClick={()=>navigate('/profiles/new')} className="px-4 py-2 text-sm rounded border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-alt)]">+ Neues Profil</button>
+      </div>
       <p className="text-sm text-gray-600 mb-6">Aktive und gespeicherte Profile. Klicke einen Namen zum Aktivieren oder bearbeite Details.</p>
       {profiles.length === 0 && (
         <div className="p-6 rounded border border-dashed border-[var(--border)] text-center text-sm text-gray-500 bg-[var(--surface-alt)]">
@@ -40,7 +43,7 @@ export const ProfileSelection: React.FC = () => {
                       {p.name}
                       {isActive && <span className="text-xs px-2 py-0.5 rounded bg-[var(--primary)] text-white">Aktiv</span>}
                     </h2>
-                    <div className="text-xs text-gray-500">{p.email || 'Keine E-Mail'} • {p.provider.toUpperCase()}</div>
+                    <div className="text-xs text-gray-500">{p.email || 'Keine E-Mail'} • {(p.provider || 'imap').toUpperCase()}</div>
                   </div>
                 </div>
                 <div className="flex gap-2 pt-1 opacity-0 group-hover:opacity-100 transition">
