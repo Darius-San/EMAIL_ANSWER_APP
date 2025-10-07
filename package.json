@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-  "dev:client": "vite --port %VITE_PORT:5467%",
-    "dev:server": "cross-env NODE_ENV=development PORT=4410 ts-node-dev --respawn --transpile-only server/src/index.ts",
+    "dev:client": "vite",
+    "dev:server": "cross-env NODE_ENV=development PORT=4410 ts-node-dev --esm --respawn --transpile-only server/src/index.ts",
     "dev": "concurrently \"npm:dev:client\" \"npm:dev:server\"",
     "build": "vite build",
     "build:server": "tsc -p server/tsconfig.json",
