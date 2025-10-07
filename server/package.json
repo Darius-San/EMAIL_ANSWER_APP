@@ -1,0 +1,13 @@
+{
+  "name": "email-responder-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "imapflow": "^1.0.164",
+    "mailparser": "^3.7.1"
+  }
+}
