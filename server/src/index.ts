@@ -51,7 +51,31 @@ app.get('/api/emails', async (req, res) => {
   }
 });
 
-const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 4410;
-app.listen(port, () => {
-  console.log(`Backend listening on port ${port}`);
-});
+const basePort = process.env.PORT ? parseInt(process.env.PORT, 10) : 4410;
+const maxAttempts = 5;
+
+function start(port: number, attempt = 1) {
+  const server = app.listen(port, () => {
+    console.log(`Backend listening on port ${port}`);
+    if (port !== basePort) {
+      console.warn(`Started on fallback port (requested ${basePort}). Update client API base if necessary.`);
+    }
+  });
+  server.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      if (attempt < maxAttempts) {
+        const next = port + 1;
+        console.warn(`Port ${port} in use. Retrying on ${next} (attempt ${attempt + 1}/${maxAttempts})...`);
+        start(next, attempt + 1);
+      } else {
+        console.error(`Failed to bind after ${maxAttempts} attempts. Exiting.`);
+        process.exit(1);
+      }
+    } else {
+      console.error('Server error:', err);
+      process.exit(1);
+    }
+  });
+}
+
+start(basePort);

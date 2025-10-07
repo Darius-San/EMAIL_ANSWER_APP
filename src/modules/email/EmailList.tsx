@@ -21,13 +21,15 @@ export const EmailList: React.FC = () => {
   const [user, setUser] = useState('');
   const [password, setPassword] = useState('');
 
+  const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:4410';
+
   async function fetchEmails(manual = false) {
     if (!profile) return;
     setLoading(true); setError(null);
     try {
       // Currently backend only supports env creds via GET; manual form is UX placeholder
-      const qs = new URLSearchParams({ provider: profile.provider });
-      const res = await fetch(`http://localhost:4410/api/emails?${qs.toString()}`);
+  const qs = new URLSearchParams({ provider: profile.provider });
+  const res = await fetch(`${apiBase}/api/emails?${qs.toString()}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setEmails(data.emails || []);
@@ -75,7 +77,7 @@ export const EmailList: React.FC = () => {
         </div>
       )}
       {loading && <div className="text-sm text-gray-500">Lade...</div>}
-      {error && <div className="text-sm text-red-600">Fehler: {error}</div>}
+  {error && <div className="text-sm text-red-600">Fehler: {error} – Backend offline? (Basis: {apiBase})</div>}
       {!loading && emails.length === 0 && !error && (
         <div className="text-sm text-gray-500 border rounded p-4 bg-[var(--surface-alt)]">Keine E-Mails gefunden.</div>
       )}
