@@ -51,7 +51,7 @@ app.get('/api/emails', async (req, res) => {
   }
 });
 
-const port = process.env.PORT || 4000;
+const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 4410;
 app.listen(port, () => {
   console.log(`Backend listening on port ${port}`);
 });

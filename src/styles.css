@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Theme base using CSS variables */
+:root[data-theme='warm'] {  --primary:#D97706; --primary-hover:#B45309; --accent:#F59E0B; --bg:#FAF7F2; --surface:#ffffff; --surface-alt:#F3F0EB; --border:#E5E0DA; --border-strong:#D1CCC5; }
+:root[data-theme='ocean'] { --primary:#2563EB; --primary-hover:#1E40AF; --accent:#06B6D4; --bg:#F8FAFC; --surface:#FFFFFF; --surface-alt:#F1F5F9; --border:#E2E8F0; --border-strong:#CBD5E1; }
+:root[data-theme='earth'] { --primary:#4F772D; --primary-hover:#3A5A1A; --accent:#90A955; --bg:#F9FAF7; --surface:#FFFFFF; --surface-alt:#F1F4EF; --border:#DDE2DA; --border-strong:#BFC8B8; }
+:root[data-theme='sunset'] { --primary:#F97316; --primary-hover:#EA580C; --accent:#F43F5E; --bg:#FFF7ED; --surface:#FFFFFF; --surface-alt:#FFECD1; --border:#FCD34D; --border-strong:#FBBF24; }
+:root[data-theme='glass'] { --primary:#6366F1; --primary-hover:#4F46E5; --accent:#A855F7; --bg:#0F172A; --surface:rgba(255,255,255,0.08); --surface-alt:rgba(255,255,255,0.12); --border:rgba(255,255,255,0.2); --border-strong:rgba(255,255,255,0.35); color: #fff; }
+
+body { background: var(--bg); color: var(--primary-fg, #111); }
+
+.btn-base { font-weight:500; transition: all .2s ease; }
+.btn-warm { @apply px-4 py-2 rounded-2xl text-white shadow-md hover:shadow-lg; background: linear-gradient(to right,#FBBF24,#D97706); }
+.btn-ocean { @apply px-4 py-2 rounded-xl text-white font-medium shadow-sm hover:scale-105; background: linear-gradient(to right,#2563EB,#06B6D4); }
+.btn-earth { @apply px-5 py-2 rounded-xl text-white font-medium shadow-sm; background:#4F772D; }
+.btn-earth:hover { background:#3A5A1A; }
+.btn-sunset { @apply px-4 py-2 rounded-full text-white font-semibold hover:scale-105; background: linear-gradient(to right,#F97316,#EC4899,#DC2626); }
+.btn-glass { @apply px-5 py-2 rounded-xl border text-white; background: rgba(255,255,255,0.1); backdrop-filter: blur(12px); border-color: rgba(255,255,255,0.2); }
+.btn-glass:hover { background: rgba(255,255,255,0.2); }

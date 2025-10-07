@@ -1,13 +1,15 @@
 import React from 'react';
-import { ProviderSelector } from './provider/ProviderSelector';
-import { EmailList } from './email/EmailList';
+import { useEffect } from 'react';
+import { ProfileSelection } from './profile/ProfileSelection';
+import { useThemeStore } from '../store/themeStore';
 
 export const App: React.FC = () => {
+  const theme = useThemeStore(s => s.theme);
+  const setTheme = useThemeStore(s => s.setTheme);
+  useEffect(() => { setTheme(theme); }, []); // ensure attribute on first mount
   return (
-    <div style={{ fontFamily: 'sans-serif', padding: '1rem' }}>
-      <h1>Email Responder App</h1>
-      <ProviderSelector />
-      <EmailList />
+    <div className="p-6 font-sans">
+      <ProfileSelection />
     </div>
   );
 };
