@@ -3,6 +3,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { TopBar } from './TopBar';
 import { useProfileStore } from '../../store/profileStore';
 import { useThemeStore } from '../../store/themeStore';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { ProfileSetupPage } from '../profile/ProfileSetupPage';
+import { ProfileSelection } from '../profile/ProfileSelection';
 
 describe('TopBar', () => {
   beforeEach(() => {
@@ -13,15 +16,30 @@ describe('TopBar', () => {
     }} as any);
   });
 
-  it('adds a new profile', () => {
-    render(<TopBar />);
+  it('navigates to new profile setup page', () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route path="/" element={<><TopBar /><ProfileSelection /></>} />
+          <Route path="/profiles/new" element={<><TopBar /><ProfileSetupPage /></>} />
+        </Routes>
+      </MemoryRouter>
+    );
     const btn = screen.getByText(/Neues Profil/i);
     fireEvent.click(btn);
-    expect(useProfileStore.getState().profiles.length).toBe(1);
+    expect(screen.getByText(/Neues Profil anlegen/i)).not.toBeNull();
+    // ensure no profile auto-created yet
+    expect(useProfileStore.getState().profiles.length).toBe(0);
   });
 
   it('switches theme when clicking a theme button', () => {
-    render(<TopBar />);
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route path="/" element={<TopBar />} />
+        </Routes>
+      </MemoryRouter>
+    );
     const ocean = screen.getByText(/Calm Ocean/i);
     fireEvent.click(ocean);
     expect(document.documentElement.getAttribute('data-theme')).toBe('ocean');

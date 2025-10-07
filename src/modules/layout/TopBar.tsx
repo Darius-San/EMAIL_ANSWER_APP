@@ -1,12 +1,14 @@
 import React from 'react';
 import { ThemeSwitcher } from '../theme/ThemeSwitcher';
 import { useProfileStore } from '../../store/profileStore';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export const TopBar: React.FC = () => {
   const profiles = useProfileStore(s => s.profiles);
   const activeId = useProfileStore(s => s.activeId);
   const setActive = useProfileStore(s => s.setActive);
-  const addProfile = useProfileStore(s => s.addProfile);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   return (
     <div className="flex flex-col gap-3 mb-6">
@@ -22,9 +24,11 @@ export const TopBar: React.FC = () => {
             {p.name}
           </button>
         ))}
-        <button onClick={() => addProfile()} className="px-3 py-1 rounded border text-sm bg-[var(--surface)] hover:bg-[var(--surface-alt)] border-dashed border-[var(--border)]">
-          + Neues Profil
-        </button>
+        {location.pathname !== '/profiles/new' && (
+          <button onClick={() => navigate('/profiles/new')} className="px-3 py-1 rounded border text-sm bg-[var(--surface)] hover:bg-[var(--surface-alt)] border-dashed border-[var(--border)]">
+            + Neues Profil
+          </button>
+        )}
       </div>
     </div>
   );

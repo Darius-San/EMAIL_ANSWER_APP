@@ -2,6 +2,8 @@ import React from 'react';
 import { useEffect } from 'react';
 import { ProfileSelection } from './profile/ProfileSelection';
 import { TopBar } from './layout/TopBar';
+import { Routes, Route } from 'react-router-dom';
+import { ProfileSetupPage } from './profile/ProfileSetupPage';
 import { useThemeStore } from '../store/themeStore';
 
 export const App: React.FC = () => {
@@ -11,7 +13,10 @@ export const App: React.FC = () => {
   return (
     <div className="p-6 font-sans">
       <TopBar />
-      <ProfileSelection />
+      <Routes>
+        <Route path="/" element={<ProfileSelection />} />
+        <Route path="/profiles/new" element={<ProfileSetupPage />} />
+      </Routes>
     </div>
   );
 };
