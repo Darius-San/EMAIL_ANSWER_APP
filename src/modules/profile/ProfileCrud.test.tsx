@@ -5,14 +5,15 @@ import { ProfileSelection } from './ProfileSelection';
 import { ProfileSetupPage } from './ProfileSetupPage';
 import { ProfileEditPage } from './ProfileEditPage';
 import { useProfileStore } from '../../store/profileStore';
+import { TopBar } from '../layout/TopBar';
 
 function renderWith(initial: string) {
   return render(
     <MemoryRouter initialEntries={[initial]}>
       <Routes>
-        <Route path="/" element={<ProfileSelection />} />
-        <Route path="/profiles/new" element={<ProfileSetupPage />} />
-        <Route path="/profiles/:id/edit" element={<ProfileEditPage />} />
+        <Route path="/" element={<><TopBar /><ProfileSelection /></>} />
+        <Route path="/profiles/new" element={<><TopBar /><ProfileSetupPage /></>} />
+        <Route path="/profiles/:id/edit" element={<><TopBar /><ProfileEditPage /></>} />
       </Routes>
     </MemoryRouter>
   );
@@ -24,32 +25,58 @@ describe('Profile CRUD', () => {
   });
 
   it('creates then lists profile card', () => {
-  // navigate from root via button now
-  renderWith('/');
-  const newButtons = screen.getAllByText(/\+ Neues Profil/i);
-  fireEvent.click(newButtons[0]);
+    renderWith('/');
+  const newBtn = screen.getByTestId('topbar-new-profile');
+  fireEvent.click(newBtn);
     fireEvent.change(screen.getByLabelText(/Profil Name/i), { target: { value: 'Support' }});
     fireEvent.change(screen.getByLabelText(/Benutzername/i), { target: { value: 'Agent' }});
     fireEvent.change(screen.getByLabelText(/E-Mail Adresse/i), { target: { value: 'agent@example.com' }});
-    fireEvent.click(screen.getByText(/Speichern/i));
-  expect(screen.getAllByText('Support').length).toBeGreaterThan(0);
+    // Switch to outlook to bypass IMAP inline requirement (or fill host). We test IMAP creation separately.
+    fireEvent.change(screen.getByLabelText(/Provider/i), { target: { value: 'outlook' }});
+    fireEvent.click(screen.getByRole('button', { name: /^Speichern$/i }));
+    const store = useProfileStore.getState();
+    expect(store.profiles.some(p => p.name === 'Support' && p.provider === 'outlook')).toBe(true);
   });
 
   it('edits an existing profile', () => {
     // seed
-    const p = useProfileStore.getState().addProfile({ name: 'Test', userName: 'U', email: 'u@x.de', provider: 'imap' });
+  const p = useProfileStore.getState().addProfile({ name: 'Test', userName: 'U', email: 'u@x.de', provider: 'imap', imapHost: 'mail.example.com', imapConfigured: true });
     renderWith('/');
     fireEvent.click(screen.getByText(/Bearbeiten/i));
     const nameInput = screen.getByDisplayValue('Test');
     fireEvent.change(nameInput, { target: { value: 'Test Neu' }});
-    fireEvent.click(screen.getByText(/^Speichern$/i));
-  expect(screen.getAllByText('Test Neu').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: /^Speichern$/i }));
+    const updated = useProfileStore.getState().profiles.find(x=>x.id===p.id)!;
+    expect(updated.name).toBe('Test Neu');
+  });
+
+  it('edits imap fields and saves new password', () => {
+    const p = useProfileStore.getState().addProfile({ name: 'Box', userName: 'U', email: 'u@example.com', provider: 'imap', imapHost: 'old.host', imapConfigured: true, imapPassword: 'old' });
+    renderWith('/');
+    fireEvent.click(screen.getByText(/Bearbeiten/i));
+    fireEvent.change(screen.getByLabelText(/IMAP Host/i), { target: { value: 'new.host' }});
+  fireEvent.change(screen.getByLabelText(/Neues Passwort \(optional\)/i), { target: { value: 'newpass' }});
+    fireEvent.click(screen.getByLabelText(/Neues Passwort speichern/i));
+  fireEvent.click(screen.getByRole('button', { name: /^Speichern$/i }));
+    const updated = useProfileStore.getState().profiles.find(x=>x.id===p.id)!;
+    expect(updated.imapHost).toBe('new.host');
+    expect(updated.imapPassword).toBe('newpass');
+  });
+
+  it('removes stored imap password', () => {
+    const p = useProfileStore.getState().addProfile({ name: 'Secure', userName: 'U', email: 'u@example.com', provider: 'imap', imapHost: 'mail.host', imapConfigured: true, imapPassword: 'keep' });
+    renderWith('/');
+    fireEvent.click(screen.getByText(/Bearbeiten/i));
+    fireEvent.click(screen.getByLabelText(/Gespeichertes Passwort entfernen/i));
+  fireEvent.click(screen.getByRole('button', { name: /^Speichern$/i }));
+    const updated = useProfileStore.getState().profiles.find(x=>x.id===p.id)!;
+    expect(updated.imapPassword).toBeUndefined();
   });
 
   it('delete requires confirmation', () => {
     useProfileStore.getState().addProfile({ name: 'ToDelete', userName: 'TD', email: 'td@example.com', provider: 'imap' });
     renderWith('/');
-    const delBtn = screen.getByText(/Löschen/i);
+  const delBtn = screen.getByRole('button', { name: /Löschen/i });
     fireEvent.click(delBtn);
     expect(screen.getByText(/Sicher\?/i)).not.toBeNull();
     fireEvent.click(screen.getByText(/Sicher\?/i));
@@ -59,7 +86,7 @@ describe('Profile CRUD', () => {
   it('cancel edit returns without change', () => {
     const p = useProfileStore.getState().addProfile({ name: 'Original', userName: 'O', email: 'o@example.com', provider: 'imap' });
     renderWith('/');
-    fireEvent.click(screen.getByText(/Bearbeiten/i));
+  fireEvent.click(screen.getByRole('button', { name: /Bearbeiten/i }));
     const nameInput = screen.getByDisplayValue('Original');
     fireEvent.change(nameInput, { target: { value: 'Changed' }});
     fireEvent.click(screen.getByText(/Abbrechen/i));
@@ -81,7 +108,7 @@ describe('Profile edit legacy safety', () => {
     );
 
     // Try to save directly
-    fireEvent.click(screen.getByText(/Speichern/i));
+  fireEvent.click(screen.getByRole('button', { name: /^Speichern$/i }));
 
     // Should show validation errors instead of crashing
     expect(screen.getByText(/Profilname fehlt/i)).not.toBeNull();

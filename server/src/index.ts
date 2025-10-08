@@ -51,6 +51,71 @@ app.get('/api/emails', async (req, res) => {
   }
 });
 
+// Dynamic IMAP listing with provided credentials (not persisted server-side)
+app.post('/api/imap/list', async (req, res) => {
+  const { host, port, secure, user, pass, limit, mailbox } = req.body || {};
+  // Basic validation
+  const errors: string[] = [];
+  if (!host || typeof host !== 'string') errors.push('host erforderlich');
+  const finalPort = typeof port === 'number' ? port : (typeof port === 'string' ? parseInt(port, 10) : 993);
+  if (!user || typeof user !== 'string') errors.push('user erforderlich');
+  if (!pass || typeof pass !== 'string') errors.push('pass erforderlich');
+  if (finalPort <= 0 || finalPort > 65535) errors.push('port ungültig');
+  const lim = typeof limit === 'number' ? limit : 10;
+  if (errors.length) {
+    return res.status(400).json({ error: 'Validation', details: errors });
+  }
+  // Lazy import to avoid bundling if unused
+  let ImapFlow: any; let simpleParser: any;
+  try {
+    ({ ImapFlow } = await import('imapflow'));
+    ({ simpleParser } = await import('mailparser'));
+  } catch (e) {
+    return res.status(500).json({ error: 'Server dependency error', details: (e as Error).message });
+  }
+  const client = new ImapFlow({
+    host,
+    port: finalPort,
+    secure: secure === false ? false : true, // default true
+    auth: { user, pass }
+  });
+  try {
+    await client.connect();
+    const targetMailbox = (mailbox && typeof mailbox === 'string') ? mailbox : 'INBOX';
+    const lock = await client.getMailboxLock(targetMailbox);
+    const results: any[] = [];
+    try {
+      let fetched = 0;
+      for await (const msg of client.fetch({ seen: false }, { envelope: true, bodyStructure: true, source: true })) {
+        fetched++;
+        if (msg.source) {
+          const parsed = await simpleParser(msg.source);
+          results.push({
+            id: msg.uid?.toString() || Math.random().toString(36).slice(2),
+            subject: parsed.subject || '(kein Betreff)',
+            from: parsed.from?.text || '',
+            to: parsed.to ? parsed.to.value.map((v: any) => v.address || '') : [],
+            date: parsed.date?.toISOString(),
+            snippet: parsed.text?.slice(0, 140),
+            provider: 'imap'
+          });
+        }
+        if (fetched >= lim) break;
+      }
+    } finally {
+      lock.release();
+    }
+    res.json({ emails: results });
+  } catch (e: any) {
+    let status = 500;
+    const msg = e?.message || 'Unbekannter Fehler';
+    if (/auth|login|credentials/i.test(msg)) status = 401;
+    res.status(status).json({ error: msg });
+  } finally {
+    try { await client.logout(); } catch { /* ignore */ }
+  }
+});
+
 const basePort = process.env.PORT ? parseInt(process.env.PORT, 10) : 4410;
 const maxAttempts = 5;
 

@@ -33,6 +33,47 @@ Backend:  http://localhost:4410 (Auto-Fallback auf 4411..4414 falls belegt – L
 - Health Polling Banner (BackendStatusBanner) mit Retry
 - Tests: Profile CRUD, Theme, Email-Liste (Mock), Backend Offline Banner, Smoke Test
 
+## Dynamische IMAP Konfiguration (Neu)
+Ab sofort kann pro Profil ein IMAP Zugang direkt über die UI konfiguriert werden:
+
+1. Neues Profil anlegen (Provider = IMAP) – die IMAP Felder erscheinen direkt im Formular.
+2. Host, Port (Standard 993), SSL/TLS, Benutzer, optional Passwort eingeben.
+3. Optional: Häkchen "Passwort lokal speichern" legt das Passwort im LocalStorage (Zustand Persist) ab. Ohne Häkchen muss es bei jedem Abruf eingegeben werden.
+4. Speichern – Profil ist sofort `imapConfigured`.
+5. Im Bearbeiten-Dialog können IMAP Felder angepasst, neues Passwort gespeichert oder das gespeicherte Passwort entfernt werden.
+
+Sicherheits-Hinweis:
+- Lokal gespeicherte Passwörter können von jeder Person mit Zugriff auf den Browser-Profil-Speicher ausgelesen werden.
+- Auf gemeinsam genutzten oder unsicheren Rechnern NICHT aktivieren.
+- Für Accounts mit 2FA besser App-Passwort verwenden statt Primär-Passwort.
+
+Technik Backend:
+- Endpoint: `POST /api/imap/list` Body `{ host, port, secure, user, pass, limit }`.
+- Baut temporär eine Verbindung (ImapFlow), liest ungelesene Mails (Default Limit 10) und schließt die Session.
+- Keine Server-seitige Persistenz der Zugangsdaten.
+
+Fallback / Legacy:
+- Der alte GET `/api/emails?provider=imap` existiert weiter für `.env` basierte Credentials.
+
+TODO (später):
+- Rate Limiting, Maskierung sensibler Felder im Log, optionaler verschlüsselter Storage.
+
+## Debug Mode
+Ein simpler Umschalter (Button "Debug" in der Top Bar) aktiviert einen sichtbaren Banner und erlaubt künftig zusätzliche Entwicklungs-Features.
+
+Aktuell liefert der Debug Mode:
+- Sichtbarer Banner "DEBUG MODE" (optische Warnung)
+- Persistierter Zustand (LocalStorage Key `email-responder-debug`)
+
+Geplante Ideen:
+- Live Store Inspector (Zustand diff)
+- IMAP Roh-Metadaten Anzeige
+- Netzwerk-Request Log Overlay
+- Manuelles Triggern von Test-Fehlern / künstlichen Latenzen
+
+Hinweis: Debug Mode nicht im Produktionsbuild aktiv lassen.
+
+
 ## Nächste Schritte (Roadmap)
 - Dynamische IMAP Credentials Übergabe (POST Endpoint)
 - Mail Detail Ansicht + Reply Draft
@@ -82,6 +123,7 @@ Alle Tests laufen headless (Vitest + React Testing Library). Ergänzte Smoke- un
 
 ## Sicherheit
 Keine Passwörter committen. `.env` lokal halten. Später: Secrets über Secret Manager / Vault integrieren.
+Bei aktivierter Passwort-Speicherung wird das Passwort unverschlüsselt (aktuell Base LocalStorage via zustand/persist) abgelegt – Feature nur für Entwicklung gedacht.
 
 ## License
 MIT (optional anpassen)

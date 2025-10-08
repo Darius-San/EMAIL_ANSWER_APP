@@ -12,12 +12,16 @@ export interface Profile {
   createdAt: string;
   imapHost?: string;
   imapUser?: string;
+  imapPort?: number;
+  imapSecure?: boolean; // default true
+  imapConfigured?: boolean; // set true when user completed setup wizard
+  imapPassword?: string; // optional persisted only if user explicitly chooses (security risk)
 }
 
 interface ProfileState {
   profiles: Profile[];
   activeId: string | null;
-  addProfile: (data: Partial<Pick<Profile,'name'|'userName'|'email'|'provider'|'imapHost'|'imapUser'>>) => Profile;
+  addProfile: (data: Partial<Pick<Profile,'name'|'userName'|'email'|'provider'|'imapHost'|'imapUser'|'imapPort'|'imapSecure'|'imapConfigured'|'imapPassword'>>) => Profile;
   removeProfile: (id: string) => void;
   deleteProfile?: (id: string) => void; // alias for removeProfile for semantic clarity in UI
   setActive: (id: string) => void;
@@ -41,7 +45,11 @@ export const useProfileStore = create<ProfileState>()(persist((set, get) => ({
       provider: data.provider || 'imap',
       createdAt: new Date().toISOString(),
       imapHost: data.imapHost,
-      imapUser: data.imapUser
+      imapUser: data.imapUser,
+      imapPort: data.imapPort,
+      imapSecure: (typeof data.imapSecure === 'boolean') ? data.imapSecure : true,
+      imapConfigured: !!data.imapConfigured,
+      imapPassword: data.imapPassword // only if user opted in (UI control)
     };
     set(state => ({ profiles: [...state.profiles, p], activeId: p.id }));
     return p;
@@ -74,7 +82,11 @@ export const useProfileStore = create<ProfileState>()(persist((set, get) => ({
       persisted.profiles = persisted.profiles.map((p: any) => ({
         ...p,
         imapHost: p.imapHost,
-        imapUser: p.imapUser
+        imapUser: p.imapUser,
+        imapPort: p.imapPort ?? 993,
+        imapSecure: (typeof p.imapSecure === 'boolean') ? p.imapSecure : true,
+        imapConfigured: p.imapConfigured || false,
+        imapPassword: p.imapPassword // do not modify; if absent keep absent
       }));
     }
     return persisted;

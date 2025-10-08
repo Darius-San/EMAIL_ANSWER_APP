@@ -25,7 +25,7 @@ describe('TopBar', () => {
         </Routes>
       </MemoryRouter>
     );
-    const btn = screen.getByRole('button', { name: /\+ Neues Profil/i });
+  const btn = screen.getByTestId('topbar-new-profile');
     fireEvent.click(btn);
     expect(screen.getByText(/Neues Profil anlegen/i)).not.toBeNull();
     // ensure no profile auto-created yet

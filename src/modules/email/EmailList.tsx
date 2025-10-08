@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useProfileStore } from '../../store/profileStore';
 
-interface EmailItem {
+export interface EmailItem {
   id: string;
   subject: string;
   from: string;
@@ -10,34 +10,64 @@ interface EmailItem {
   provider: string;
 }
 
-export const EmailList: React.FC = () => {
+interface EmailListProps {
+  limit?: number;
+}
+
+export const EmailList: React.FC<EmailListProps> = ({ limit }) => {
   const activeId = useProfileStore(s => s.activeId);
   const profile = useProfileStore(s => s.profiles.find(p => p.id === s.activeId));
   const [emails, setEmails] = useState<EmailItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showManual, setShowManual] = useState(false);
-  const [host, setHost] = useState('');
-  const [user, setUser] = useState('');
   const [password, setPassword] = useState('');
 
   const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:4410';
 
-  async function fetchEmails(manual = false) {
+  async function fetchEmails() {
     if (!profile) return;
     setLoading(true); setError(null);
     try {
-      // Currently backend only supports env creds via GET; manual form is UX placeholder
-  const qs = new URLSearchParams({ provider: profile.provider });
-  const res = await fetch(`${apiBase}/api/emails?${qs.toString()}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setEmails(data.emails || []);
+      if (profile.provider === 'imap' && profile.imapConfigured) {
+        const body: any = {
+          host: profile.imapHost,
+          port: profile.imapPort || 993,
+          secure: typeof profile.imapSecure === 'boolean' ? profile.imapSecure : true,
+          user: profile.imapUser || profile.email,
+          pass: password || profile.imapPassword,
+          limit: limit || 15
+        };
+        if (!body.pass) {
+          throw new Error('Kein Passwort eingegeben. (Setup Seite: optional speichern)');
+        }
+        const res = await fetch(`${apiBase}/api/imap/list`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(()=>({}));
+          throw new Error(data.error || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        let list: EmailItem[] = data.emails || [];
+        // defensive: sort desc by date if present
+        list = list.sort((a,b)=> (new Date(b.date||0).getTime()) - (new Date(a.date||0).getTime()));
+        if (limit) list = list.slice(0, limit);
+        setEmails(list);
+      } else {
+        // fallback: legacy GET (env based)
+        const qs = new URLSearchParams({ provider: profile.provider });
+        const res = await fetch(`${apiBase}/api/emails?${qs.toString()}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        let list: EmailItem[] = data.emails || [];
+        list = list.sort((a,b)=> (new Date(b.date||0).getTime()) - (new Date(a.date||0).getTime()));
+        if (limit) list = list.slice(0, limit);
+        setEmails(list);
+      }
     } catch (e: any) {
       setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
   useEffect(() => { setEmails([]); if (profile) fetchEmails(); }, [activeId]);
@@ -49,31 +79,26 @@ export const EmailList: React.FC = () => {
       <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
         <h3 className="text-xl font-semibold">E-Mails ({profile.name})</h3>
         <div className="flex gap-2">
-          {profile.provider === 'imap' && (
+          {profile.provider === 'imap' && profile.imapConfigured && !profile.imapPassword && (
             <button onClick={()=>setShowManual(s=>!s)} className="px-3 py-1 text-xs rounded border border-[var(--border)] bg-[var(--surface-alt)] hover:bg-[var(--surface)]">
-              {showManual ? 'Manuelle Daten ausblenden' : 'Manuelle IMAP Daten'}
+              {showManual ? 'Passwort-Feld ausblenden' : 'Passwort eingeben'}
             </button>
           )}
-          <button onClick={()=>fetchEmails(showManual)} className="btn-warm btn-base text-sm">Aktualisieren</button>
+          <button onClick={()=>fetchEmails()} className="btn-warm btn-base text-sm">Aktualisieren</button>
         </div>
       </div>
-      {showManual && profile.provider === 'imap' && (
-        <div className="mb-4 p-4 rounded border border-[var(--border)] bg-[var(--surface-alt)] space-y-3">
-          <div className="grid sm:grid-cols-3 gap-3">
-            <div>
-              <label htmlFor="imap-host" className="block text-xs font-medium mb-1">Host</label>
-              <input id="imap-host" value={host} onChange={e=>setHost(e.target.value)} className="w-full px-2 py-1 rounded border bg-[var(--surface)] border-[var(--border)]" />
-            </div>
-            <div>
-              <label htmlFor="imap-user" className="block text-xs font-medium mb-1">User</label>
-              <input id="imap-user" value={user} onChange={e=>setUser(e.target.value)} className="w-full px-2 py-1 rounded border bg-[var(--surface)] border-[var(--border)]" />
-            </div>
-            <div>
-              <label htmlFor="imap-pass" className="block text-xs font-medium mb-1">Passwort</label>
-              <input id="imap-pass" type="password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full px-2 py-1 rounded border bg-[var(--surface)] border-[var(--border)]" />
-            </div>
+      {profile.provider === 'imap' && !profile.imapConfigured && (
+        <div className="mb-4 p-4 rounded border border-[var(--border)] bg-[var(--surface-alt)] text-xs text-gray-600">
+          IMAP Setup unvollständig. <a href={`#/profiles/${profile.id}/setup`} className="text-[var(--primary)] underline">Jetzt konfigurieren</a> um Mails abzurufen.
+        </div>
+      )}
+      {showManual && profile.provider === 'imap' && profile.imapConfigured && !profile.imapPassword && (
+        <div className="mb-4 p-4 rounded border border-[var(--border)] bg-[var(--surface-alt)] space-y-2">
+          <div>
+            <label htmlFor="imap-pass" className="block text-xs font-medium mb-1">Passwort (wird nicht gespeichert)</label>
+            <input id="imap-pass" type="password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full px-2 py-1 rounded border bg-[var(--surface)] border-[var(--border)]" />
+            <p className="text-[10px] text-gray-500 mt-1">Eingabe erforderlich bei jedem Laden wenn nicht gespeichert.</p>
           </div>
-          <p className="text-[10px] text-gray-500">Hinweis: Passwörter werden nicht gespeichert – Funktionalität für dynamische Credentials folgt serverseitig.</p>
         </div>
       )}
       {loading && <div className="text-sm text-gray-500">Lade...</div>}

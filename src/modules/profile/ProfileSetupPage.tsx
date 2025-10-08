@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfileStore, ProfileProvider } from '../../store/profileStore';
 
@@ -10,6 +10,18 @@ export const ProfileSetupPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [provider, setProvider] = useState<ProfileProvider>('imap');
   const [errors, setErrors] = useState<string[]>([]);
+  // IMAP inline setup states
+  const [imapHost, setImapHost] = useState('');
+  const [imapPort, setImapPort] = useState(993);
+  const [imapSecure, setImapSecure] = useState(true);
+  const [imapUser, setImapUser] = useState('');
+  const [imapPassword, setImapPassword] = useState('');
+  const [savePassword, setSavePassword] = useState(false);
+
+  // Keep imapUser in sync initially with email if empty
+  useEffect(() => {
+    if (!imapUser && email) setImapUser(email);
+  }, [email]);
 
   function validate() {
     const errs: string[] = [];
@@ -17,13 +29,29 @@ export const ProfileSetupPage: React.FC = () => {
     if (!userName.trim()) errs.push('Benutzername fehlt');
     if (!email.trim()) errs.push('E-Mail fehlt');
     if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) errs.push('E-Mail Format ungültig');
+    if (provider === 'imap') {
+      if (!imapHost.trim()) errs.push('IMAP Host fehlt');
+      if (!imapPort || imapPort <= 0 || imapPort > 65535) errs.push('IMAP Port ungültig');
+      if (!imapUser.trim()) errs.push('IMAP Benutzer fehlt');
+    }
     setErrors(errs);
     return errs.length === 0;
   }
 
   function handleSave() {
     if (!validate()) return;
-    addProfile({ name, userName, email, provider });
+    const payload: any = { name, userName, email, provider };
+    if (provider === 'imap') {
+      Object.assign(payload, {
+        imapHost: imapHost.trim(),
+        imapPort,
+        imapSecure,
+        imapUser: imapUser.trim(),
+        imapConfigured: true,
+        imapPassword: savePassword ? imapPassword : undefined
+      });
+    }
+    addProfile(payload);
     navigate('/');
   }
 
@@ -56,6 +84,41 @@ export const ProfileSetupPage: React.FC = () => {
             <option value="thunderbird">Thunderbird</option>
           </select>
         </div>
+        {provider === 'imap' && (
+          <div className="space-y-4 border rounded p-4 bg-[var(--surface-alt)] border-[var(--border)]">
+            <div>
+              <h3 className="text-sm font-semibold mb-1">IMAP Einstellungen</h3>
+              <p className="text-xs text-gray-600">Host & Port deines Mailservers. Port 993 (SSL) ist Standard. Benutzer ist meist deine volle E-Mail Adresse.</p>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium mb-1" htmlFor="imap-host">IMAP Host</label>
+                <input id="imap-host" value={imapHost} onChange={e=>setImapHost(e.target.value)} className="w-full px-3 py-2 rounded border bg-[var(--surface)] border-[var(--border)]" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1" htmlFor="imap-port">Port</label>
+                <input id="imap-port" type="number" value={imapPort} onChange={e=>setImapPort(Number(e.target.value))} className="w-full px-3 py-2 rounded border bg-[var(--surface)] border-[var(--border)]" />
+              </div>
+              <div className="flex items-center gap-2 pt-2">
+                <input id="imap-secure" type="checkbox" checked={imapSecure} onChange={e=>setImapSecure(e.target.checked)} />
+                <label htmlFor="imap-secure" className="text-xs font-medium">Sicher (SSL/TLS)</label>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1" htmlFor="imap-user">IMAP Benutzer</label>
+                <input id="imap-user" value={imapUser} onChange={e=>setImapUser(e.target.value)} className="w-full px-3 py-2 rounded border bg-[var(--surface)] border-[var(--border)]" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium mb-1" htmlFor="imap-pass">Passwort</label>
+                <input id="imap-pass" type="password" value={imapPassword} onChange={e=>setImapPassword(e.target.value)} className="w-full px-3 py-2 rounded border bg-[var(--surface)] border-[var(--border)]" />
+                <div className="flex items-center gap-2 mt-2">
+                  <input id="imap-save" type="checkbox" checked={savePassword} onChange={e=>setSavePassword(e.target.checked)} />
+                  <label htmlFor="imap-save" className="text-[11px] text-gray-600">Passwort lokal speichern (nicht auf fremden Geräten)</label>
+                </div>
+              </div>
+            </div>
+            <div className="text-[10px] text-gray-500">Die IMAP Daten werden lokal im Browser persistiert. Passwort nur wenn Häkchen gesetzt.</div>
+          </div>
+        )}
         <div className="flex gap-3 pt-2">
           <button onClick={handleSave} className="btn-warm btn-base">Speichern</button>
           <button onClick={()=>navigate('/')} className="px-4 py-2 rounded border border-[var(--border)] bg-[var(--surface-alt)]">Abbrechen</button>
